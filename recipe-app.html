@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhojan Bot - Recipe Suggester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA; /* A very light, clean gray */
+        }
+
+        /* --- Animations --- */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- UI Element Styling --- */
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #DAA520; /* GoldenRod */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .main-button {
+            background-color: #DAA520; /* GoldenRod */
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(218, 165, 32, 0.39);
+        }
+        .main-button:hover {
+            background-color: #B8860B; /* DarkGoldenRod */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(218, 165, 32, 0.5);
+        }
+
+        /* --- Recipe Card Styling (Interactive) --- */
+        .recipe-card {
+            background-color: white;
+            border-radius: 1rem;
+            border: 1px solid #E9ECEF; /* Light Gray Border */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.5s ease-out forwards;
+            overflow: hidden; 
+            opacity: 0; /* Start hidden for animation */
+        }
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        .recipe-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .recipe-card-header {
+            padding: 1.5rem;
+            cursor: pointer;
+        }
+        .recipe-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2F4F4F; /* DarkSlateGray */
+        }
+        .recipe-card .description {
+            color: #6C757D; /* Gray */
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .recipe-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .recipe-details.open {
+            max-height: 1500px; 
+        }
+        .recipe-details-content {
+             padding: 0 1.5rem 1.5rem 1.5rem;
+        }
+        .recipe-details h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #2F4F4F; /* DarkSlateGray */
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #DAA520;
+            padding-bottom: 0.25rem;
+            display: inline-block;
+        }
+        .recipe-details ul, .recipe-details ol {
+            list-style-position: inside;
+            margin-bottom: 1rem;
+            color: #495057; /* Darker Gray */
+        }
+        .recipe-details ul li, .recipe-details ol li {
+            margin-bottom: 0.5rem;
+        }
+        .video-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #2F4F4F;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+        .video-button:hover {
+            background-color: #000;
+            transform: scale(1.05);
+        }
+        
+        /* New Self-Contained Backgrounds */
+        #login-page {
+            background-color: #2F4F4F;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        #home-page-wrapper, #something-new-page, #health-corner-page {
+            background-color: #fefbeb; /* Fallback color */
+            background-image: radial-gradient(circle, #fffbeb 0%, #fde68a 100%);
+            background-attachment: fixed; /* Creates the parallax effect */
+            min-height: calc(100vh - 72px); /* Full height minus header */
+        }
+
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-4">
+            <div class="text-2xl font-bold" style="color: #2F4F4F;">
+                Bhojan Bot
+            </div>
+            <div class="space-x-4">
+                <button id="home-btn" class="text-gray-600 hover:text-amber-600 font-semibold transition-colors">Home</button>
+                <button id="something-new-btn" class="text-gray-600 hover:text-amber-600 font-semibold transition-colors">Something New</button>
+                <button id="health-corner-btn" class="text-gray-600 hover:text-amber-600 font-semibold transition-colors">Health Corner</button>
+                <button id="login-nav-btn" class="text-gray-600 hover:text-amber-600 font-semibold transition-colors">Login</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex flex-col justify-center items-center p-4">
+        <div class="max-w-md w-full">
+            <header class="text-center mb-10">
+                 <div class="inline-flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-full p-4 mb-4">
+                     <svg class="w-10 h-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.362-3.797z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15a2.25 2.25 0 002.25-2.25V5.25A2.25 2.25 0 0012 3v12z" />
+                    </svg>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold text-white">Welcome!</h1>
+                <p class="text-lg text-gray-300 mt-2">Please log in to continue.</p>
+            </header>
+            <div class="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-gray-200">
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                    <input type="text" id="name" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" placeholder="e.g., Rohan">
+                </div>
+                <div class="mb-6">
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Your Location</label>
+                    <input type="text" id="location" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" placeholder="e.g., Mumbai, India">
+                </div>
+                <button id="login-btn" class="main-button w-full font-bold py-3 px-4 rounded-lg">
+                    Start Cooking
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Home Page -->
+    <div id="home-page-wrapper" class="hidden">
+        <div id="home-page" class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+            
+            <div class="max-w-3xl mx-auto">
+                 <div class="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-gray-200 mb-12 text-center">
+                    <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #2F4F4F;">Find a Recipe</h1>
+                    <p id="welcome-message" class="text-lg text-gray-500 mb-8">Let's turn your ingredients into a masterpiece.</p>
+                    
+                    <div class="text-left">
+                        <label for="ingredients" class="block text-lg font-semibold mb-3 text-gray-700">What's in your kitchen?</label>
+                        <textarea id="ingredients" rows="4" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200" placeholder="e.g., potatoes, onions, tomatoes, ginger..."></textarea>
+                        <button id="get-recipe-btn" class="main-button mt-4 w-full font-bold py-3 px-4 rounded-lg">
+                            Suggest Recipes
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="content-wrapper">
+                 <!-- Results will appear here -->
+                <div id="output-container" class="w-full">
+                    <div id="loader" class="hidden justify-center items-center flex-col">
+                        <div class="loader"></div>
+                        <p class="mt-3 text-gray-600">Finding the perfect recipes for you...</p>
+                    </div>
+                    <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+                        <strong class="font-bold">Oops!</strong>
+                        <span class="block sm:inline">Something went wrong. Please try again.</span>
+                    </div>
+                    <div id="recipes-container"></div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Something New Page -->
+    <div id="something-new-page" class="hidden">
+        <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-3xl text-center">
+            <div class="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-gray-200 mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #2F4F4F;">Feeling Adventurous?</h1>
+                <p class="text-lg text-gray-500 mb-8">Let's discover a brand new Indian fusion dish for you to try!</p>
+                <button id="generate-new-dish-btn" class="main-button font-bold py-3 px-6 rounded-lg text-lg">
+                    Generate a New Dish
+                </button>
+            </div>
+            <div id="new-dish-output">
+                <div id="new-dish-loader" class="hidden justify-center items-center flex-col">
+                    <div class="loader"></div>
+                    <p class="mt-3 text-gray-600">Inventing a new recipe...</p>
+                </div>
+                <div id="new-dish-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+                    <strong class="font-bold">Oops!</strong>
+                    <span class="block sm:inline">Something went wrong. Please try again.</span>
+                </div>
+                <div id="new-dish-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Corner Page -->
+    <div id="health-corner-page" class="hidden">
+        <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #2F4F4F;">Health Corner</h1>
+                <p class="text-lg text-gray-500">Nutritious and delicious Indian recipes for a healthier you.</p>
+            </div>
+            
+            <!-- Healthy Dishes Section -->
+            <div class="mb-12">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-bold" style="color: #2F4F4F;">Healthy Dishes</h2>
+                    <button id="generate-healthy-dish-btn" class="main-button font-semibold py-2 px-4 rounded-lg">Generate New Dish</button>
+                </div>
+                <div id="healthy-dishes-container"></div>
+            </div>
+
+            <!-- Healthy Drinks Section -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-bold" style="color: #2F4F4F;">Healthy Drinks</h2>
+                    <button id="generate-healthy-drink-btn" class="main-button font-semibold py-2 px-4 rounded-lg">Generate New Drink</button>
+                </div>
+                <div id="healthy-drinks-container"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Page Elements ---
+        const loginPage = document.getElementById('login-page');
+        const homePageWrapper = document.getElementById('home-page-wrapper');
+        const somethingNewPage = document.getElementById('something-new-page');
+        const healthCornerPage = document.getElementById('health-corner-page');
+        const headerHomeBtn = document.getElementById('home-btn');
+        const headerSomethingNewBtn = document.getElementById('something-new-btn');
+        const headerHealthCornerBtn = document.getElementById('health-corner-btn');
+        const headerLoginBtn = document.getElementById('login-nav-btn');
+
+        // --- Login Elements ---
+        const loginBtn = document.getElementById('login-btn');
+        const nameInput = document.getElementById('name');
+        const locationInput = document.getElementById('location');
+
+        // --- Home Page Elements ---
+        const getRecipeBtn = document.getElementById('get-recipe-btn');
+        const ingredientsInput = document.getElementById('ingredients');
+        const loader = document.getElementById('loader');
+        const recipesContainer = document.getElementById('recipes-container');
+        const errorMessageDiv = document.getElementById('error-message');
+        const welcomeMessage = document.getElementById('welcome-message');
+
+        // --- Something New Page Elements ---
+        const generateNewDishBtn = document.getElementById('generate-new-dish-btn');
+        const newDishLoader = document.getElementById('new-dish-loader');
+        const newDishError = document.getElementById('new-dish-error');
+        const newDishContainer = document.getElementById('new-dish-container');
+
+        // --- Health Corner Page Elements ---
+        const generateHealthyDishBtn = document.getElementById('generate-healthy-dish-btn');
+        const generateHealthyDrinkBtn = document.getElementById('generate-healthy-drink-btn');
+        const healthyDishesContainer = document.getElementById('healthy-dishes-container');
+        const healthyDrinksContainer = document.getElementById('healthy-drinks-container');
+
+        // --- App State ---
+        let user = {};
+
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', handleLogin);
+        getRecipeBtn.addEventListener('click', handleGetRecipe);
+        generateNewDishBtn.addEventListener('click', handleGenerateNewDish);
+        generateHealthyDishBtn.addEventListener('click', () => handleGenerateHealthyRecipe('dish'));
+        generateHealthyDrinkBtn.addEventListener('click', () => handleGenerateHealthyRecipe('drink'));
+        headerHomeBtn.addEventListener('click', () => showPage('home'));
+        headerSomethingNewBtn.addEventListener('click', () => showPage('something-new'));
+        headerHealthCornerBtn.addEventListener('click', () => showPage('health-corner'));
+        headerLoginBtn.addEventListener('click', () => showPage('login'));
+
+        // --- Initialization ---
+        function init() {
+            // Start on the login page by default
+            showPage('login');
+        }
+
+        function showPage(pageName) {
+            loginPage.classList.add('hidden');
+            homePageWrapper.classList.add('hidden');
+            somethingNewPage.classList.add('hidden');
+            healthCornerPage.classList.add('hidden');
+
+            if (pageName === 'login') {
+                loginPage.classList.remove('hidden');
+            } else {
+                // Prevent going to other pages if not logged in
+                if (!user.name) {
+                    showPage('login');
+                    return;
+                }
+                if (pageName === 'home') {
+                    homePageWrapper.classList.remove('hidden');
+                } else if (pageName === 'something-new') {
+                    somethingNewPage.classList.remove('hidden');
+                } else if (pageName === 'health-corner') {
+                    healthCornerPage.classList.remove('hidden');
+                    populateHealthCorner(); // Populate static content when page is shown
+                }
+            }
+        }
+
+        function handleLogin() {
+            const name = nameInput.value.trim();
+            const location = locationInput.value.trim();
+
+            if (!name || !location) {
+                alert('Please enter your name and location.');
+                return;
+            }
+
+            user = { name, location };
+            welcomeMessage.textContent = `Happy cooking, ${user.name}! What's in your kitchen in ${user.location}?`;
+            
+            showPage('home');
+        }
+
+        async function handleGetRecipe() {
+            const ingredients = ingredientsInput.value.trim();
+            if (!ingredients) {
+                showError(true, "Please enter some ingredients first!");
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                const prompt = `
+                    You are an expert chef specializing in authentic, home-style cooking from all over the world.
+                    A user named ${user.name} from ${user.location} has the following ingredients available: ${ingredients}.
+                    Based *only* on these ingredients and common pantry staples (like salt, sugar, water, oil), suggest up to 3 simple and delicious dishes. The dishes can be from any cuisine.
+                    For each dish, your response must be structured as follows and separated by "---":
+                    **Dish Name:** The name of the dish.
+                    **Cuisine:** The cuisine of the dish (e.g., Indian, Italian, Mexican).
+                    **Description:** A brief, enticing one-sentence description.
+                    **YouTube Search Query:** A concise search query for finding a cooking video of the dish on YouTube (e.g., "Aloo Gobi Recipe").
+                    **Ingredients:** A bulleted list of ALL ingredients required.
+                    **Instructions:** A numbered list of clear, step-by-step cooking instructions.`;
+                const generatedText = await callGeminiAPI(prompt);
+                parseAndDisplayRecipes(generatedText, recipesContainer);
+            } catch (error) {
+                console.error("Error fetching recipe:", error);
+                showError(true, error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function handleGenerateNewDish() {
+            showLoading(true, true);
+            try {
+                const prompt = `
+                    You are a highly creative and innovative chef. Invent a completely new, unique, and delicious-sounding Indian fusion recipe that a home cook can make. The dish should not be a standard or well-known recipe. Give it a creative name.
+                    Your response must be structured as follows:
+                    **Dish Name:** The creative name of the dish.
+                    **Cuisine:** A fusion or inventive cuisine style (e.g., "Modern Indian", "Global Fusion with Indian Spices").
+                    **Description:** A brief, enticing one-sentence description of your creation.
+                    **YouTube Search Query:** A concise, creative search query for a video that might inspire a similar dish (e.g., "Tandoori Paneer Tacos").
+                    **Ingredients:** A bulleted list of ALL ingredients required.
+                    **Instructions:** A numbered list of clear, step-by-step cooking instructions.`;
+                const generatedText = await callGeminiAPI(prompt);
+                parseAndDisplayRecipes(generatedText, newDishContainer, 1); // Only display 1 card
+            } catch (error) {
+                console.error("Error generating new dish:", error);
+                showError(true, "Could not generate a new dish.", true);
+            } finally {
+                showLoading(false, true);
+            }
+        }
+        
+        async function handleGenerateHealthyRecipe(type) {
+            const container = type === 'dish' ? healthyDishesContainer : healthyDrinksContainer;
+            const loaderId = type === 'dish' ? 'healthy-dish-loader' : 'healthy-drink-loader';
+            const errorId = type === 'dish' ? 'healthy-dish-error' : 'healthy-drink-error';
+
+            const loaderHtml = `<div id="${loaderId}" class="flex justify-center items-center flex-col"><div class="loader"></div><p class="mt-3 text-gray-600">Generating a healthy Indian ${type}...</p></div>`;
+            container.innerHTML = loaderHtml;
+
+            try {
+                const prompt = `
+                    You are a nutritionist and chef specializing in healthy Indian cuisine. Generate a single, simple, and healthy Indian recipe for a ${type}.
+                    Your response must be structured as follows:
+                    **Dish Name:** The name of the healthy Indian ${type}.
+                    **Cuisine:** The cuisine style (e.g., "Ayurvedic", "Healthy Indian").
+                    **Description:** A brief, enticing one-sentence description.
+                    **Health Benefits:** A short paragraph explaining why this recipe is healthy according to Indian wellness principles. For example, mention key vitamins or benefits like "good for digestion" or "boosts immunity".
+                    **YouTube Search Query:** A concise search query for finding a video of the recipe.
+                    **Ingredients:** A bulleted list of ALL ingredients required.
+                    **Instructions:** A numbered list of clear, step-by-step cooking instructions.`;
+                const generatedText = await callGeminiAPI(prompt);
+                parseAndDisplayRecipes(generatedText, container, 1);
+            } catch (error) {
+                console.error(`Error generating healthy ${type}:`, error);
+                container.innerHTML = `<div id="${errorId}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert"><strong class="font-bold">Oops!</strong> <span class="block sm:inline">Could not generate a healthy ${type}.</span></div>`;
+            }
+        }
+
+        function populateHealthCorner() {
+            const healthyDishesString = `
+                **Dish Name:** Moong Dal Cheela (Savory Lentil Crepes)
+                **Cuisine:** Healthy Indian
+                **Description:** Light, protein-packed savory crepes made from yellow lentils, perfect for breakfast or a light meal.
+                **Health Benefits:** Moong dal is rich in protein and fiber, making these cheelas filling and great for blood sugar control. They are low in fat and easy to digest.
+                **YouTube Search Query:** Moong Dal Cheela Recipe
+                **Ingredients:**
+                * 1 cup yellow moong dal, soaked for 4 hours
+                * 1/2 inch ginger
+                * 1 green chili
+                * 1/4 cup chopped coriander
+                * 1/4 tsp turmeric powder
+                * Salt to taste
+                * Oil for cooking
+                **Instructions:**
+                1. Drain the soaked moong dal and grind it with ginger and green chili to a smooth batter.
+                2. Add coriander, turmeric, and salt to the batter and mix well.
+                3. Heat a non-stick pan and lightly grease it with oil.
+                4. Pour a ladleful of batter and spread it in a circular motion to form a thin crepe.
+                5. Drizzle a little oil and cook on both sides until golden brown.
+                ---
+                **Dish Name:** Vegetable Raita (Yogurt Dip)
+                **Cuisine:** Healthy Indian
+                **Description:** A cooling and refreshing yogurt dip mixed with fresh vegetables and mild spices.
+                **Health Benefits:** Yogurt is a great source of probiotics, which are essential for gut health. The raw vegetables add fiber and vitamins, making this a perfect accompaniment to any meal.
+                **YouTube Search Query:** Mixed Vegetable Raita Recipe
+                **Ingredients:**
+                * 1 cup plain yogurt (dahi)
+                * 1/4 cup grated cucumber
+                * 1/4 cup grated carrot
+                * 1/4 cup finely chopped onion
+                * 1/4 tsp roasted cumin powder
+                * Salt to taste
+                * Chopped coriander for garnish
+                **Instructions:**
+                1. Whisk the yogurt in a bowl until smooth.
+                2. Add the grated cucumber, carrot, and chopped onion.
+                3. Stir in the roasted cumin powder and salt.
+                4. Garnish with fresh coriander and serve chilled.
+            `;
+
+            const healthyDrinksString = `
+                **Dish Name:** Masala Chaas (Spiced Buttermilk)
+                **Cuisine:** Ayurvedic Drink
+                **Description:** A traditional Indian digestive drink made from yogurt, water, and spices.
+                **Health Benefits:** Chaas is a fantastic digestive aid that cools the body. The spices like cumin and ginger help in digestion and reduce bloating. It's a light, hydrating, and probiotic-rich drink.
+                **YouTube Search Query:** How to make Masala Chaas
+                **Ingredients:**
+                * 1/2 cup plain yogurt
+                * 1.5 cups cold water
+                * 1/2 tsp roasted cumin powder
+                * A pinch of black salt (kala namak)
+                * 1/4 inch ginger, grated
+                * 1 tbsp chopped coriander leaves
+                **Instructions:**
+                1. In a blender, combine yogurt, water, cumin powder, black salt, and ginger.
+                2. Blend for 30 seconds until frothy.
+                3. Stir in the chopped coriander leaves.
+                4. Serve chilled for a refreshing experience.
+                ---
+                **Dish Name:** Amla Juice (Indian Gooseberry)
+                **Cuisine:** Wellness Drink
+                **Description:** A tangy and powerful juice renowned for its immense health benefits.
+                **Health Benefits:** Amla is one of the richest sources of Vitamin C, a potent antioxidant that boosts immunity. It's excellent for skin, hair, and overall vitality.
+                **YouTube Search Query:** Fresh Amla Juice Recipe
+                **Ingredients:**
+                * 4-5 fresh amlas (Indian gooseberries)
+                * 1 cup water
+                * 1 tsp honey (optional)
+                * A pinch of black pepper
+                **Instructions:**
+                1. Wash and de-seed the amlas.
+                2. Chop them into small pieces and add to a blender with water.
+                3. Blend until smooth.
+                4. Strain the juice through a fine-mesh sieve.
+                5. Stir in honey and a pinch of black pepper. Serve immediately.
+            `;
+            parseAndDisplayRecipes(healthyDishesString, healthyDishesContainer);
+            parseAndDisplayRecipes(healthyDrinksString, healthyDrinksContainer);
+        }
+
+        async function callGeminiAPI(prompt) {
+            const apiKey = "AIzaSyDeY02OHbOWpTH0k_Q6vy0RwctJ4LDhYGc";
+            if (!apiKey || apiKey === "YOUR_API-KEY_HERE") {
+                throw new Error("API key not set.");
+            }
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API call failed with status: ${response.status}. ${errorBody}`);
+            }
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                console.error("Unexpected API response structure:", result);
+                throw new Error("Could not extract text from API response.");
+            }
+        }
+        
+        function createSvgPlaceholder(text) {
+            const sanitizedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const svg = `
+                <svg width="600" height="400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+                    <rect width="100%" height="100%" fill="#F5F5DC"></rect>
+                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Inter, sans-serif" font-size="30" fill="#2F4F4F">${sanitizedText}</text>
+                </svg>
+            `;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+
+        function parseAndDisplayRecipes(text, container, maxRecipes = 3) {
+            container.innerHTML = '';
+            // Add grid classes for the new layout
+            container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8';
+            const recipeStrings = text.split('---').filter(s => s.trim().length > 10).slice(0, maxRecipes);
+            
+            if (recipeStrings.length === 0 && text.includes('**Dish Name:**')) {
+                recipeStrings.push(text); // Handle single recipe responses that don't use '---'
+            }
+
+            if (recipeStrings.length === 0) {
+                showError(true, "Could not find any recipes. Try again!", container !== recipesContainer);
+                return;
+            }
+
+            if(recipeStrings.length === 1) {
+                container.className = 'max-w-3xl mx-auto'; // Center single card
+            }
+
+            recipeStrings.forEach((recipeText, index) => {
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+                // Add staggered animation delay
+                card.style.animationDelay = `${index * 150}ms`;
+
+                const dishNameMatch = recipeText.match(/\*\*Dish Name:\*\*\s*(.*)/);
+                const cuisineMatch = recipeText.match(/\*\*Cuisine:\*\*\s*(.*)/);
+                const descriptionMatch = recipeText.match(/\*\*Description:\*\*\s*(.*)/);
+                const youtubeQueryMatch = recipeText.match(/\*\*YouTube Search Query:\*\*\s*(.*)/);
+                
+                const dishName = dishNameMatch ? dishNameMatch[1].trim() : "Suggested Recipe";
+                const cuisine = cuisineMatch ? cuisineMatch[1].trim() : "";
+                const description = descriptionMatch ? descriptionMatch[1].trim() : "A delicious dish based on your ingredients.";
+                const youtubeQuery = youtubeQueryMatch ? youtubeQueryMatch[1].trim() : dishName;
+
+                const recipeContent = recipeText
+                    .replace(/\*\*Dish Name:\*\*\s*(.*)/, '')
+                    .replace(/\*\*Cuisine:\*\*\s*(.*)/, '')
+                    .replace(/\*\*Description:\*\*\s*(.*)/, '')
+                    .replace(/\*\*Image Query:\*\*\s*(.*)/, '') 
+                    .replace(/\*\*YouTube Search Query:\*\*\s*(.*)/, '')
+                    .replace(/\*\*(.*?)\*\*/g, '<h3>$1</h3>')
+                    .replace(/^\s*\*/gm, '<ul><li>')
+                    .replace(/(\n\s*\*)/gm, '</li><li>')
+                    .replace(/<li>(.*?)<\/li>/gs, (match, p1) => `<li>${p1.trim()}</li>`)
+                    .replace(/<\/li>$/, '</li></ul>')
+                    .replace(/^\s*\d\./gm, '<ol><li>')
+                    .replace(/(\n\s*\d\.)/gm, '</li><li>')
+                    .replace(/<\/li>$/, '</li></ol>')
+                    .replace(/\n/g, '<br>');
+                
+                const videoButtonHTML = `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(youtubeQuery)}" target="_blank" class="video-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                    <span>Watch Video</span>
+                </a>`;
+                const imageUrl = createSvgPlaceholder(dishName);
+
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="Image of ${dishName}">
+                    <div class="recipe-card-header">
+                        <h2>${dishName}</h2>
+                        <p class="description">${cuisine ? `<span class='font-semibold' style='color: #DAA520;'>${cuisine}</span> | ` : ''}${description}</p>
+                    </div>
+                    <div class="recipe-details">
+                        <div class="recipe-details-content">
+                            ${recipeContent}
+                            ${videoButtonHTML}
+                        </div>
+                    </div>
+                `;
+                
+                card.querySelector('.recipe-card-header').addEventListener('click', () => {
+                    card.querySelector('.recipe-details').classList.toggle('open');
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function showLoading(isLoading, isNewDish = false) {
+            const loaderToShow = isNewDish ? newDishLoader : loader;
+            loaderToShow.style.display = isLoading ? 'flex' : 'none';
+            if (isLoading) {
+                if(isNewDish) newDishContainer.innerHTML = '';
+                else recipesContainer.innerHTML = '';
+                
+                errorMessageDiv.classList.add('hidden');
+                newDishError.classList.add('hidden');
+            }
+        }
+
+        function showError(hasError, message = "Something went wrong. Please try again.", isNewDishError = false) {
+            const errorDiv = isNewDishError ? newDishError : errorMessageDiv;
+            const errorSpan = errorDiv.querySelector('span');
+            
+            if (hasError) {
+                errorSpan.textContent = message;
+                errorDiv.classList.remove('hidden');
+                if(isNewDishError) newDishContainer.innerHTML = '';
+                else recipesContainer.innerHTML = '';
+            } else {
+                errorDiv.classList.add('hidden');
+            }
+        }
+
+        // --- Start the App ---
+        init();
+    </script>
+</body>
+</html
