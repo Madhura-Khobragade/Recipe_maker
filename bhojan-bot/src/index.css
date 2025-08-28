@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #F8F9FA;
+  }
+}
+
+@layer components {
+  .loader {
+    @apply border-4 border-gray-200 border-l-primary rounded-full w-10 h-10 animate-spin;
+  }
+  
+  .main-button {
+    @apply bg-primary text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out shadow-lg hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-xl;
+  }
+  
+  .recipe-card {
+    @apply bg-white rounded-2xl border border-gray-200 shadow-lg mb-6 transition-all duration-300 ease-in-out animate-fade-in overflow-hidden opacity-0 hover:-translate-y-1 hover:shadow-xl;
+  }
+  
+  .recipe-card-header {
+    @apply p-6 cursor-pointer;
+  }
+  
+  .recipe-card h2 {
+    @apply text-2xl font-bold text-secondary mb-2;
+  }
+  
+  .recipe-card .description {
+    @apply text-gray-600 text-sm;
+  }
+  
+  .recipe-details {
+    @apply max-h-0 overflow-hidden transition-all duration-700 ease-in-out;
+  }
+  
+  .recipe-details.open {
+    @apply max-h-[1500px];
+  }
+  
+  .recipe-details-content {
+    @apply px-6 pb-6;
+  }
+  
+  .recipe-details h3 {
+    @apply text-lg font-semibold text-secondary mt-4 mb-3 border-b-2 border-primary pb-1 inline-block;
+  }
+  
+  .video-button {
+    @apply inline-flex items-center gap-2 bg-secondary text-white py-2 px-4 rounded-lg no-underline font-medium mt-4 transition-all duration-200 hover:bg-black hover:scale-105;
+  }
+}
