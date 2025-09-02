@@ -10,7 +10,7 @@ const Login = ({ onLogin }) => {
   const [ingredients, setIngredients] = useState([]);
   const navigate = useNavigate();
 
-  // Initialize ingredients with random positions across the entire window
+  // Initialize ingredients with random positions and movement directions
   useEffect(() => {
     const generateIngredients = () => {
       const windowHeight = window.innerHeight;
@@ -49,8 +49,11 @@ const Login = ({ onLogin }) => {
         ...ingredient,
         x: Math.random() * (windowWidth - 100),
         y: Math.random() * (windowHeight - 100),
+        velocityX: (Math.random() - 0.5) * 2, // Random horizontal velocity
+        velocityY: (Math.random() - 0.5) * 2, // Random vertical velocity
         isDragging: false,
-        dragOffset: { x: 0, y: 0 }
+        dragOffset: { x: 0, y: 0 },
+        isHovered: false
       }));
 
       setIngredients(newIngredients);
@@ -63,6 +66,44 @@ const Login = ({ onLogin }) => {
     window.addEventListener('resize', handleResize);
     
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Animation loop for automatic movement
+  useEffect(() => {
+    const animateIngredients = () => {
+      setIngredients(prev => prev.map(ingredient => {
+        if (ingredient.isDragging || ingredient.isHovered) return ingredient;
+        
+        const windowHeight = window.innerHeight;
+        const windowWidth = window.innerWidth;
+        
+        let newX = ingredient.x + ingredient.velocityX;
+        let newY = ingredient.y + ingredient.velocityY;
+        
+        // Bounce off walls
+        if (newX <= 0 || newX >= windowWidth - 100) {
+          newX = Math.max(0, Math.min(windowWidth - 100, newX));
+          ingredient.velocityX *= -1;
+        }
+        
+        if (newY <= 0 || newY >= windowHeight - 100) {
+          newY = Math.max(0, Math.min(windowHeight - 100, newY));
+          ingredient.velocityY *= -1;
+        }
+        
+        return {
+          ...ingredient,
+          x: newX,
+          y: newY,
+          velocityX: ingredient.velocityX,
+          velocityY: ingredient.velocityY
+        };
+      }));
+    };
+
+    const animationInterval = setInterval(animateIngredients, 50); // 20 FPS
+    
+    return () => clearInterval(animationInterval);
   }, []);
 
   const handleMouseDown = (e, ingredient) => {
@@ -92,6 +133,22 @@ const Login = ({ onLogin }) => {
 
   const handleMouseUp = () => {
     setIngredients(prev => prev.map(ing => ({ ...ing, isDragging: false })));
+  };
+
+  const handleMouseEnter = (ingredientId) => {
+    setIngredients(prev => prev.map(ing => 
+      ing.id === ingredientId 
+        ? { ...ing, isHovered: true }
+        : ing
+    ));
+  };
+
+  const handleMouseLeave = (ingredientId) => {
+    setIngredients(prev => prev.map(ing => 
+      ing.id === ingredientId 
+        ? { ...ing, isHovered: false }
+        : ing
+    ));
   };
 
   useEffect(() => {
@@ -169,19 +226,25 @@ const Login = ({ onLogin }) => {
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-green-50 via-amber-50 to-orange-50">
       {/* Enhanced Background Ingredients Section - Full Window Coverage */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Draggable Ingredients */}
+        {/* Moving Ingredients */}
         {ingredients.map((ingredient) => (
           <div
             key={ingredient.id}
             className={`absolute cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
-              ingredient.isDragging ? 'z-50' : 'z-10'
+              ingredient.isDragging ? 'z-50' : ingredient.isHovered ? 'z-40' : 'z-10'
             }`}
             style={{
               left: ingredient.x,
               top: ingredient.y,
-              transform: ingredient.isDragging ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)'
+              transform: ingredient.isDragging 
+                ? 'scale(1.1) rotate(5deg)' 
+                : ingredient.isHovered 
+                ? 'scale(1.2) rotate(10deg)' 
+                : 'scale(1) rotate(0deg)'
             }}
             onMouseDown={(e) => handleMouseDown(e, ingredient)}
+            onMouseEnter={() => handleMouseEnter(ingredient.id)}
+            onMouseLeave={() => handleMouseLeave(ingredient.id)}
           >
             <div className={`${ingredient.size} bg-gradient-to-br rounded-full shadow-2xl hover:scale-125 hover:rotate-12 transition-all duration-500 ease-in-out ${getGlowClass(ingredient.color)} pointer-events-auto`}>
               <div className={`w-full h-full flex items-center justify-center text-white ${ingredient.textSize}`}>
