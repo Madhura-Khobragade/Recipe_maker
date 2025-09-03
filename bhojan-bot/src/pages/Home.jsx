@@ -38,7 +38,7 @@ const Home = ({ user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent to-yellow-100">
+    <div className="min-h-screen">
       <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-gray-200 mb-12 text-center">

@@ -162,7 +162,7 @@ const HealthCorner = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent to-yellow-100">
+    <div className="min-h-screen">
       <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-2 text-secondary">

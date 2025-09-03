@@ -42,7 +42,7 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
+      <div className="App min-h-screen bg-gradient-to-br from-accent to-yellow-100">
         <Header user={user} onLogout={handleLogout} />
         
         <Routes>

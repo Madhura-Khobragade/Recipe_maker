@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logoRmbg from '../assets/images/logo_rmbg.png';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -278,26 +279,12 @@ const Login = ({ onLogin }) => {
       <div className="relative z-20 min-h-screen flex flex-col justify-center items-center p-4">
         <div className="max-w-md w-full">
           <header className="text-center mb-12">
-            <div className="inline-flex items-center justify-center bg-white/30 backdrop-blur-md rounded-full p-6 mb-6 shadow-2xl border border-white/30 animate-float-slow hover:scale-110 hover:rotate-3 transition-all duration-500 ease-in-out">
-              <svg 
-                className="w-12 h-12 text-white drop-shadow-lg" 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.362-3.797z" 
-                />
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  d="M12 15a2.25 2.25 0 002.25-2.25V5.25A2.25 2.25 0 0012 3v12z" 
-                />
-              </svg>
+            <div className="inline-flex items-center justify-center bg-white/30 backdrop-blur-md rounded-full p-4 mb-6 shadow-2xl border border-white/30 animate-float-slow hover:scale-110 hover:rotate-3 transition-all duration-500 ease-in-out">
+              <img 
+                src={logoRmbg} 
+                alt="Bhojan Bot Logo" 
+                className="w-20 h-20 object-contain drop-shadow-lg"
+              />
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-3 drop-shadow-lg animate-fade-in hover:scale-105 transition-transform duration-300 ease-in-out">Welcome!</h1>
             <p className="text-xl text-gray-600 mt-3 animate-fade-in-delay hover:text-gray-800 transition-colors duration-300 ease-in-out">Please log in to continue.</p>
